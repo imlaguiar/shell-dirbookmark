@@ -25,13 +25,7 @@ func main(){
 func setUpApp() *cli.App {
     return &cli.App {
         Name: "shell-bookmark",
-        Flags: []cli.Flag {
-            &cli.StringFlag{ 
-                Name: "file",
-                Aliases: []string{"f"},
-                Usage: "File to bookmark",
-            },
-        },
+        Flags: []cli.Flag {},
         Action: func(context *cli.Context) error {
             if context.NArg() > 0 {
                 args := context.Args()
