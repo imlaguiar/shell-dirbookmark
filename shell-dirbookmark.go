@@ -13,7 +13,7 @@ import (
 
 var fileStorage string = "/home/"+os.Getenv("USER")+"/Documents/shell-bookmarks/bookmarks.txt"
 var bookmarkPath string = ""
-var file os.File
+var file *os.File
 
 func main(){
     app := setUpApp()
@@ -39,7 +39,7 @@ func setUpApp() *cli.App {
                 bookmarkPath = args.Get(1)
                 var err error
 
-                file, err = openOrCreateFile()
+                err = openOrCreateFile()
                 defer file.Close()
 
                 if err != nil {
@@ -47,14 +47,14 @@ func setUpApp() *cli.App {
                 }
 
                 if command == "add" {
-                    if err := addBookMark(file); err != nil {
+                    if err := addBookMark(); err != nil {
                         return err
                     }
                     return nil
                 } 
 
                 if command == "list" {
-                    lines, err := readLines(file);
+                    lines, err := readLines();
                     if  err != nil {
                         return err
                     }
@@ -71,7 +71,7 @@ func setUpApp() *cli.App {
     }
 }
 
-func openOrCreateFile() (file os.File, err error) {
+func openOrCreateFile() error {
     openFile, err := os.OpenFile(fileStorage, os.O_RDWR, os.ModeAppend)
     if err != nil {
         if errors.Is(err, fs.ErrNotExist) {
@@ -79,25 +79,26 @@ func openOrCreateFile() (file os.File, err error) {
             openFile, err = os.Create(fileStorage)
             if err != nil {
                 log.Fatalf("createFile: %s", err)
-                return *openFile, err
+                return err
             }
         } else {
             log.Fatalf("openFile: %s", err)
-            return *openFile, err
+            return err
         }
     }
-    return *openFile, err
+    file = openFile
+    return err
 }
 
-func addBookMark(file os.File) error {
-    allBookMarksInFile, err := readLines(file)
+func addBookMark() error {
+    allBookMarksInFile, err := readLines()
     if err != nil {
         log.Fatalf("readLines: %s", err)
         return err
     }
 
     allBookMarksInFile = append(allBookMarksInFile, bookmarkPath)
-    if err := writeLines(allBookMarksInFile, file); err != nil {
+    if err := writeLines(allBookMarksInFile); err != nil {
         log.Fatalf("writeLines: %s", err)
         return err
     }
@@ -105,17 +106,17 @@ func addBookMark(file os.File) error {
     return nil
 }
 
-func readLines(file os.File) ([]string, error) {
+func readLines() ([]string, error) {
     var lines []string
-    scanner := bufio.NewScanner(&file)
+    scanner := bufio.NewScanner(file)
     for scanner.Scan() {
         lines = append(lines, scanner.Text())
     }
     return lines, scanner.Err()
 }
 
-func writeLines(lines []string, file os.File) error {
-    writer := bufio.NewWriter(&file)
+func writeLines(lines []string) error {
+    writer := bufio.NewWriter(file)
     for _, line := range lines {
         fmt.Fprintln(writer, line)
     }
